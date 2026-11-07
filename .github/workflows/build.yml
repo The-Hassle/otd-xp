@@ -40,9 +40,10 @@ jobs:
 
       - name: Package
         run: |
-          mkdir otd-xp
-          cp otd-xp.exe tablets.txt otd-xp.ini README.txt otd-xp/
-          zip -r otd-xp-winxp-x86.zip otd-xp
+          mkdir -p staging/otd-xp
+          cp otd-xp.exe tablets.txt otd-xp.ini README.txt staging/otd-xp/
+          cd staging
+          zip -r ../otd-xp-winxp-x86.zip otd-xp
 
       - uses: actions/upload-artifact@v4
         with:
