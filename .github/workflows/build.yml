@@ -1,0 +1,50 @@
+name: otd-xp build (Windows XP 32-bit)
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-i686-win32 binutils-mingw-w64-i686 zip
+
+      - name: Run native tests
+        run: make test
+
+      - name: Build otd-xp.exe
+        run: make
+
+      - name: Check the exe really is XP compatible
+        run: |
+          set -e
+          OBJDUMP=i686-w64-mingw32-objdump
+          $OBJDUMP -p otd-xp.exe > pe.txt
+          grep -q 'pei-i386' <($OBJDUMP -f otd-xp.exe) || { echo "not a 32-bit PE"; exit 1; }
+          echo "--- header"; grep -E 'MajorOSystemVersion|MinorOSystemVersion|MajorSubsystemVersion|MinorSubsystemVersion|Subsystem' pe.txt
+          grep -qE 'MajorSubsystemVersion\s+5' pe.txt && grep -qE 'MinorSubsystemVersion\s+1' pe.txt || { echo "subsystem version is not 5.1"; exit 1; }
+          echo "--- imported DLLs"; grep 'DLL Name' pe.txt
+          BAD=$(grep 'DLL Name' pe.txt | grep -ivE 'KERNEL32|USER32|msvcrt|SETUPAPI|ADVAPI32' || true)
+          if [ -n "$BAD" ]; then echo "unexpected DLL imports:"; echo "$BAD"; exit 1; fi
+          # APIs that do not exist on Windows XP
+          if grep -E 'GetTickCount64|SRWLock|ConditionVariable|GetSystemTimePrecise|CreateSymbolicLink|InitOnceExecuteOnce|FlsAlloc.*Ex|SetThreadStackGuarantee|GetLogicalProcessorInformationEx|GetProcessMitigation' pe.txt; then
+            echo "imports an API that is missing on Windows XP"; exit 1
+          fi
+          echo "XP compatibility checks passed"
+
+      - name: Package
+        run: |
+          mkdir otd-xp
+          cp otd-xp.exe tablets.txt otd-xp.ini README.txt otd-xp/
+          zip -r otd-xp-winxp-x86.zip otd-xp
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: otd-xp-winxp-x86
+          path: otd-xp-winxp-x86.zip
