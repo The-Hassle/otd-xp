@@ -299,6 +299,21 @@ static long to_abs(double px, int origin, int size)
     return (long)(v + 0.5);
 }
 
+static void exe_dir_path(const char *name, char *out, size_t cap);
+
+/* tells otd-xp-gui which tablet is in use (name|width_mm|height_mm) */
+static void write_status(const TabletDef *t)
+{
+    char p[MAX_PATH + 32];
+    FILE *f;
+    exe_dir_path("otd-xp.status", p, sizeof(p));
+    f = fopen(p, "w");
+    if (f) {
+        fprintf(f, "%s|%g|%g\n", t->name, t->width_mm, t->height_mm);
+        fclose(f);
+    }
+}
+
 static void run_tablet(const HidDev *d, const TabletDef *t, const Config *cfg)
 {
     HANDLE h = open_dev(d->path);
@@ -318,6 +333,7 @@ static void run_tablet(const HidDev *d, const TabletDef *t, const Config *cfg)
     if (!buf) { CloseHandle(h); return; }
 
     init_device(h, d, t);
+    write_status(t);
     screen_rect(cfg, &sx, &sy, &sw, &sh);
     vx = GetSystemMetrics(SM_XVIRTUALSCREEN); vy = GetSystemMetrics(SM_YVIRTUALSCREEN);
     vw = GetSystemMetrics(SM_CXVIRTUALSCREEN); vh = GetSystemMetrics(SM_CYVIRTUALSCREEN);
@@ -476,6 +492,13 @@ int main(int argc, char **argv)
     }
     if (do_list) { cmd_list(&db, &cfg); return 0; }
 
+    {
+        HANDLE mtx = CreateMutexA(NULL, TRUE, "otd-xp-driver-instance");
+        if (mtx && GetLastError() == ERROR_ALREADY_EXISTS) {
+            printf("otd-xp is already running.\n");
+            return 1;
+        }
+    }
     SetConsoleCtrlHandler(on_ctrl, TRUE);
     {
         int announced = 0;

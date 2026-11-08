@@ -7,10 +7,13 @@ LDFLAGS = -static -static-libgcc -s \
 	-Wl,--major-subsystem-version,5 -Wl,--minor-subsystem-version,1
 LIBS = -lsetupapi
 
-all: otd-xp.exe
+all: otd-xp.exe otd-xp-gui.exe
 
 otd-xp.exe: src/main_win.c src/core.c src/core.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/main_win.c src/core.c $(LIBS)
+
+otd-xp-gui.exe: src/gui_win.c src/core.c src/core.h
+	$(CC) $(CFLAGS) $(LDFLAGS) -mwindows -o $@ src/gui_win.c src/core.c -lgdi32
 
 test: tests/test_core.c src/core.c src/core.h tablets.txt
 	gcc -std=c99 -O1 -Wall -Wextra -o test_core tests/test_core.c src/core.c -lm
@@ -20,4 +23,4 @@ tablets.txt:
 	python3 tools/gen_tablets.py $(OTD_CONFIGS) tablets.txt
 
 clean:
-	rm -f otd-xp.exe test_core
+	rm -f otd-xp.exe otd-xp-gui.exe test_core

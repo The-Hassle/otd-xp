@@ -74,6 +74,11 @@ typedef struct {
 void config_defaults(Config *c);
 int config_load(Config *c, const char *path);   /* 0 ok, -1 file missing (defaults kept), >0 = line of first error */
 
+/* Effective active area after defaults and aspect lock. Width/height are in screen
+ * orientation (i.e. after rotation); the centre is in tablet coordinates (mm). */
+void effective_area(const TabletDef *t, const Config *c, double screen_aspect,
+                    double *aw, double *ah, double *cx, double *cy);
+
 /* Map raw tablet coordinates to a 0..1 position inside the screen rectangle. */
 typedef struct { double u, v; } Pos;
 Pos map_point(const TabletDef *t, const Config *c, double screen_aspect, unsigned x, unsigned y);

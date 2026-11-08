@@ -7,10 +7,18 @@ moves the mouse cursor. It uses OpenTabletDriver's tablet database (tablets.txt)
 recognise about 340 tablet models and decode their reports.
 
 NOT included: GUI, plugins, filters/smoothing, tilt, Windows Ink, tablet buttons/touch.
-Settings are in the text file otd-xp.ini.
+Settings are in the text file otd-xp.ini (or use otd-xp-gui.exe).
 
-Using it
---------
+Easiest way: otd-xp-gui.exe
+---------------------------
+Double-click otd-xp-gui.exe. It starts the driver in the background and shows a settings
+window: type the area size/position, or drag the blue area in the picture, choose rotation
+and pen-button actions, then press "Save & restart driver". The driver only runs while the
+window is open (minimise it to keep it running). The picture shows the real tablet size
+after the driver has seen your tablet once.
+
+Using it from a command prompt
+------------------------------
 1. Keep otd-xp.exe, tablets.txt and otd-xp.ini together in one folder.
 2. Plug in the tablet. If a manufacturer driver (e.g. Wacom) is installed, uninstall it or
    close its tray program first; two drivers cannot read the same tablet.

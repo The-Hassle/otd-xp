@@ -122,6 +122,16 @@ int main(int argc, char **argv)
       p = map_point(&t, &c, 1.0, 7600 + 1000, 4750);                    /* +10 mm in x */
       CHECK(NEAR(p.u, 0.6)); }
 
+    /* effective area: lock shrinks height for a wide screen, rotation swaps defaults */
+    { Config c; double aw, ah, cx, cy;
+      t = mk(P_INTUOS, 0);
+      config_defaults(&c);
+      effective_area(&t, &c, 16.0 / 9.0, &aw, &ah, &cx, &cy);
+      CHECK(NEAR(aw, 152.0) && NEAR(ah, 152.0 * 9.0 / 16.0) && NEAR(cx, 76.0) && NEAR(cy, 47.5));
+      c.lock_aspect = 0; c.rotation = 90;
+      effective_area(&t, &c, 16.0 / 9.0, &aw, &ah, &cx, &cy);
+      CHECK(NEAR(aw, 95.0) && NEAR(ah, 152.0)); }
+
     /* database + config files */
     { const char *dbpath = argc > 1 ? argv[1] : "tablets.txt";
       TabletDb db; size_t i; int found = 0, ok = 1;

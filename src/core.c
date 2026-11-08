@@ -346,22 +346,33 @@ int config_load(Config *c, const char *path)
 
 static double clamp01(double v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
 
-Pos map_point(const TabletDef *t, const Config *c, double screen_aspect, unsigned x, unsigned y)
+void effective_area(const TabletDef *t, const Config *c, double screen_aspect,
+                    double *aw_out, double *ah_out, double *cx_out, double *cy_out)
 {
-    Pos p;
-    double tx = t->max_x ? (double)x / (double)t->max_x * t->width_mm : 0;
-    double ty = t->max_y ? (double)y / (double)t->max_y * t->height_mm : 0;
     int swap = (c->rotation == 90 || c->rotation == 270);
     double aw = c->area_w > 0 ? c->area_w : (swap ? t->height_mm : t->width_mm);
     double ah = c->area_h > 0 ? c->area_h : (swap ? t->width_mm : t->height_mm);
-    double cx = c->area_cx >= 0 ? c->area_cx : t->width_mm / 2;
-    double cy = c->area_cy >= 0 ? c->area_cy : t->height_mm / 2;
-    double dx = tx - cx, dy = ty - cy, du, dv;
 
     if (c->lock_aspect && screen_aspect > 0 && aw > 0 && ah > 0) {
         if (aw / ah > screen_aspect) aw = ah * screen_aspect;
         else                         ah = aw / screen_aspect;
     }
+    *aw_out = aw;
+    *ah_out = ah;
+    *cx_out = c->area_cx >= 0 ? c->area_cx : t->width_mm / 2;
+    *cy_out = c->area_cy >= 0 ? c->area_cy : t->height_mm / 2;
+}
+
+Pos map_point(const TabletDef *t, const Config *c, double screen_aspect, unsigned x, unsigned y)
+{
+    Pos p;
+    double tx = t->max_x ? (double)x / (double)t->max_x * t->width_mm : 0;
+    double ty = t->max_y ? (double)y / (double)t->max_y * t->height_mm : 0;
+    double aw, ah, cx, cy, dx, dy, du, dv;
+
+    effective_area(t, c, screen_aspect, &aw, &ah, &cx, &cy);
+    dx = tx - cx;
+    dy = ty - cy;
     switch (c->rotation) {
     case 90:  du = -dy; dv =  dx; break;
     case 180: du = -dx; dv = -dy; break;
