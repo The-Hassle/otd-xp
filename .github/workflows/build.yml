@@ -18,30 +18,33 @@ jobs:
       - name: Run native tests
         run: make test
 
-      - name: Build otd-xp.exe
+      - name: Build otd-xp.exe and otd-xp-gui.exe
         run: make
 
-      - name: Check the exe really is XP compatible
+      - name: Check the exes really are XP compatible
         run: |
           set -e
           OBJDUMP=i686-w64-mingw32-objdump
-          $OBJDUMP -p otd-xp.exe > pe.txt
-          grep -q 'pei-i386' <($OBJDUMP -f otd-xp.exe) || { echo "not a 32-bit PE"; exit 1; }
-          echo "--- header"; grep -E 'MajorOSystemVersion|MinorOSystemVersion|MajorSubsystemVersion|MinorSubsystemVersion|Subsystem' pe.txt
-          grep -qE 'MajorSubsystemVersion\s+5' pe.txt && grep -qE 'MinorSubsystemVersion\s+1' pe.txt || { echo "subsystem version is not 5.1"; exit 1; }
-          echo "--- imported DLLs"; grep 'DLL Name' pe.txt
-          BAD=$(grep 'DLL Name' pe.txt | grep -ivE 'KERNEL32|USER32|msvcrt|SETUPAPI|ADVAPI32' || true)
-          if [ -n "$BAD" ]; then echo "unexpected DLL imports:"; echo "$BAD"; exit 1; fi
-          # APIs that do not exist on Windows XP
-          if grep -E 'GetTickCount64|SRWLock|ConditionVariable|GetSystemTimePrecise|CreateSymbolicLink|InitOnceExecuteOnce|FlsAlloc.*Ex|SetThreadStackGuarantee|GetLogicalProcessorInformationEx|GetProcessMitigation' pe.txt; then
-            echo "imports an API that is missing on Windows XP"; exit 1
-          fi
+          for EXE in otd-xp.exe otd-xp-gui.exe; do
+            echo "=== $EXE"
+            $OBJDUMP -p $EXE > pe.txt
+            grep -q 'pei-i386' <($OBJDUMP -f $EXE) || { echo "not a 32-bit PE"; exit 1; }
+            grep -E 'MajorOSystemVersion|MinorOSystemVersion|MajorSubsystemVersion|MinorSubsystemVersion|Subsystem' pe.txt
+            grep -qE 'MajorSubsystemVersion\s+5' pe.txt && grep -qE 'MinorSubsystemVersion\s+1' pe.txt || { echo "subsystem version is not 5.1"; exit 1; }
+            echo "--- imported DLLs"; grep 'DLL Name' pe.txt
+            BAD=$(grep 'DLL Name' pe.txt | grep -ivE 'KERNEL32|USER32|GDI32|msvcrt|SETUPAPI|ADVAPI32' || true)
+            if [ -n "$BAD" ]; then echo "unexpected DLL imports:"; echo "$BAD"; exit 1; fi
+            # APIs that do not exist on Windows XP
+            if grep -E 'GetTickCount64|SRWLock|ConditionVariable|GetSystemTimePrecise|CreateSymbolicLink|InitOnceExecuteOnce|FlsAlloc.*Ex|SetThreadStackGuarantee|GetLogicalProcessorInformationEx|GetProcessMitigation' pe.txt; then
+              echo "imports an API that is missing on Windows XP"; exit 1
+            fi
+          done
           echo "XP compatibility checks passed"
 
       - name: Package
         run: |
           mkdir -p staging/otd-xp
-          cp otd-xp.exe tablets.txt otd-xp.ini README.txt staging/otd-xp/
+          cp otd-xp.exe otd-xp-gui.exe tablets.txt otd-xp.ini README.txt staging/otd-xp/
           cd staging
           zip -r ../otd-xp-winxp-x86.zip otd-xp
 
